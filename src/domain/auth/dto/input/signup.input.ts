@@ -2,6 +2,7 @@ import { InputType, Field } from '@nestjs/graphql';
 import { Role } from '@prisma/client';
 import {
   IsAlphanumeric,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -27,4 +28,9 @@ export class SignUpInput {
   @IsEnum(Role)
   @IsOptional()
   role?: Role;
+
+  @Field({ nullable: true, defaultValue: false })
+  @IsBoolean()
+  @IsOptional()
+  emailConfirm?: boolean;
 }

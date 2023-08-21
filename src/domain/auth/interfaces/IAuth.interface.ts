@@ -4,11 +4,12 @@ import { SignUpInput } from '../dto/input/signup.input';
 import { AuthResponseOutput } from '../dto/output/auth.response.output';
 import { LogoutResponseOutput } from '../dto/output/logout.response.output';
 import { ICreateTokens } from '../types/auth.types';
-import { Customer } from '../../customer/types/customer.types';
+import { CustomerConfig } from '../../customer/types/customer.types';
 
 export interface IAuthService {
   signUp(input: SignUpInput): Promise<[AuthResponseOutput, HttpException]>;
   signIn(input: SignInInput): Promise<[AuthResponseOutput, HttpException]>;
+  updateActivationCode(email: string): Promise<void>;
   createTokens(
     userId: string,
     email: string,
@@ -16,10 +17,11 @@ export interface IAuthService {
   ): Promise<ICreateTokens>;
   updateRefreshedToken(userId: string, refreshedToken: string): Promise<void>;
   logout(userId: string): Promise<LogoutResponseOutput>;
-  validateEmailExist(usernameOrEmail: string): Promise<Customer>;
+  validateEmailExist(usernameOrEmail: string): Promise<CustomerConfig>;
   getNewTokens(
     customerId: string,
     rt: string,
   ): Promise<[AuthResponseOutput, HttpException]>;
   checkDuplicateEmail(userName: string, email: string): Promise<void>;
+  generateCustomerActivationCode(): Promise<number>;
 }

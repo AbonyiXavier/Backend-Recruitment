@@ -12,15 +12,22 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon from 'argon2';
-import { AuthResponseOutput } from '../dto/output/auth.response.output';
+import {
+  AuthResponseOutput,
+  ICustomer,
+} from '../dto/output/auth.response.output';
 import { SignUpInput } from '../dto/input/signup.input';
 import { SignInInput } from '../dto/input/signin.input';
 import { LogoutResponseOutput } from '../dto/output/logout.response.output';
 import { IAuthService } from '../interfaces/IAuth.interface';
-import { Customer } from '../../customer/types/customer.types';
+import { CustomerConfig } from '../../customer/types/customer.types';
 import { PrismaService } from '../../../prisma.service';
 import { ICreateTokens } from '../types/auth.types';
 import { Role } from '@prisma/client';
+import { EmailService } from '../../../providers/email/email.service';
+import { ActivateCodeInput } from '../dto/input/activatieCode.input';
+import { CustomerService } from '../../customer/services/customer.service';
+import { Customer } from '../../customer/entities/customer.entity';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -29,6 +36,8 @@ export class AuthService implements IAuthService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwtService: JwtService,
     @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(EmailService) private readonly emailService: EmailService,
+    @Inject(CustomerService) private readonly customerService: CustomerService,
   ) {}
 
   async signUp(
@@ -40,11 +49,14 @@ export class AuthService implements IAuthService {
       await this.checkDuplicateEmail(email);
 
       const hashedPassword = await argon.hash(password);
+      const activationCode = await this.generateCustomerActivationCode();
+
       const customer = await this.prisma.customer.create({
         data: {
           email,
           password: hashedPassword,
           role: role || Role.USER,
+          code: activationCode,
         },
       });
 
@@ -57,6 +69,13 @@ export class AuthService implements IAuthService {
       await this.updateRefreshedToken(customer?.id, refreshToken);
 
       const response = { accessToken, refreshToken, customer };
+
+      if (customer) {
+        await this.emailService.sendEmailActivationCode(
+          customer?.email,
+          customer?.code,
+        );
+      }
 
       return [response, null];
     } catch (error) {
@@ -79,6 +98,12 @@ export class AuthService implements IAuthService {
         throw new UnauthorizedException('Invalid credentials provided');
       }
 
+      if (!customer?.emailConfirm) {
+        throw new UnauthorizedException(
+          'Please activate your account before you can login',
+        );
+      }
+
       const { accessToken, refreshToken } = await this.createTokens(
         customer?.id,
         customer?.email,
@@ -88,6 +113,33 @@ export class AuthService implements IAuthService {
       await this.updateRefreshedToken(customer?.id, refreshToken);
 
       const response = { accessToken, refreshToken, customer };
+
+      return [response, null];
+    } catch (error) {
+      this.logger.error({ stack: error?.stack, message: error?.message });
+      return [null, error];
+    }
+  }
+  async confirmActivationCode(
+    props: ActivateCodeInput,
+  ): Promise<[Customer, HttpException]> {
+    const { email, code } = props;
+
+    try {
+      const customer = await this.prisma.customer.findFirst({
+        where: {
+          email,
+          code,
+        },
+      });
+
+      if (!customer) {
+        throw new UnauthorizedException(`Account doesn't exist`);
+      }
+
+      await this.updateActivationCode(customer?.email);
+
+      const [response] = await this.customerService.customerMe(customer?.id);
 
       return [response, null];
     } catch (error) {
@@ -146,6 +198,23 @@ export class AuthService implements IAuthService {
       throw new InternalServerErrorException('Failed to update refreshedToken');
     }
   }
+  async updateActivationCode(email: string): Promise<void> {
+    try {
+      await this.prisma.customer.update({
+        where: {
+          email,
+        },
+        data: {
+          code: undefined,
+          emailConfirm: true,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to update updateActivationCode',
+      );
+    }
+  }
 
   async logout(userId: string): Promise<LogoutResponseOutput> {
     try {
@@ -168,7 +237,7 @@ export class AuthService implements IAuthService {
   /***
    *  Validator to check if email exists
    */
-  async validateEmailExist(customerEmail: string): Promise<Customer> {
+  async validateEmailExist(customerEmail: string): Promise<CustomerConfig> {
     const customer = await this.prisma.customer.findFirst({
       where: {
         email: customerEmail,
@@ -234,5 +303,27 @@ export class AuthService implements IAuthService {
     if (existingUser) {
       throw new ConflictException('Email already in use.');
     }
+  }
+
+  /***
+   * Generate 6-digit customer activation code
+   */
+  async generateCustomerActivationCode(): Promise<number> {
+    let activationCode = Math.floor(100000 + Math.random() * 900000);
+
+    const checkDuplicateCode = async () => {
+      const userCodeExist = await this.prisma.customer.findFirst({
+        where: {
+          code: activationCode,
+        },
+      });
+
+      if (userCodeExist) {
+        activationCode = Math.floor(100000 + Math.random() * 900000);
+      }
+    };
+
+    await checkDuplicateCode();
+    return activationCode;
   }
 }

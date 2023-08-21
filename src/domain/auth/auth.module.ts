@@ -6,6 +6,8 @@ import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
 import { PrismaService } from '../../prisma.service';
 import { PublicAuthResolvers } from './api/public/resolvers';
 import { ConfigModule } from '@nestjs/config';
+import { EmailService } from '../../providers/email/email.service';
+import { CustomerService } from '../customer/services/customer.service';
 
 @Module({
   imports: [ConfigModule],
@@ -16,6 +18,8 @@ import { ConfigModule } from '@nestjs/config';
     PrismaService,
     AccessTokenStrategy,
     RefreshTokenStrategy,
+    EmailService,
+    CustomerService,
   ],
 })
 export class AuthModule {}

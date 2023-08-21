@@ -7,5 +7,6 @@ import { PublicCustomerResolvers } from './api/public/resolvers';
   imports: [],
   controllers: [],
   providers: [...PublicCustomerResolvers, CustomerService, PrismaService],
+  exports: [CustomerService],
 })
 export class CustomerModule {}

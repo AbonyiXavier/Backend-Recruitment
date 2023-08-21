@@ -1,6 +1,9 @@
 import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import { AuthResponseOutput } from '../../../../dto/output/auth.response.output';
+import {
+  AuthResponseOutput,
+  ICustomer,
+} from '../../../../dto/output/auth.response.output';
 import { Public } from '../../../../../../common/decorators/public.decorator';
 import { SignInInput } from '../../../../dto/input/signin.input';
 import { SignUpInput } from '../../../../dto/input/signup.input';
@@ -10,6 +13,7 @@ import { RefreshTokenGuard } from '../../../../guards/refreshToken.guard';
 import { AuthService } from '../../../../services/auth.service';
 import { CurrentCustomer } from '../../../../../../common/decorators/currentCustomer.decorator';
 import { CurrentCustomerId } from '../../../../../../common/decorators/currentCustomerId.decorator';
+import { ActivateCodeInput } from '../../../../dto/input/activatieCode.input';
 
 @Resolver(() => AuthResponseOutput)
 export class AuthMutationResolver {
@@ -35,6 +39,23 @@ export class AuthMutationResolver {
   })
   async signIn(@Args('input') signInInput: SignInInput) {
     const [response, error] = await this.authService.signIn(signInInput);
+
+    if (error) {
+      throw error;
+    }
+
+    return response;
+  }
+
+  @Public()
+  @Mutation(() => ICustomer, {
+    name: 'confirmActivationCode',
+    description: 'confirm activation cod',
+  })
+  async confirmEmailActivationCode(@Args('input') props: ActivateCodeInput) {
+    const [response, error] = await this.authService.confirmActivationCode(
+      props,
+    );
 
     if (error) {
       throw error;

@@ -11,11 +11,18 @@ import { AuthModule } from './domain/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AccessTokenGuard } from './domain/auth/guards/accessToken.guard';
 import { RoleGuard } from './domain/auth/guards/role.guard';
+import { ConfigModule } from '@nestjs/config';
+import { EmailModule } from './providers/email/email.module';
 
 @Module({
   imports: [
     AuthModule,
     CustomerModule,
+    EmailModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),

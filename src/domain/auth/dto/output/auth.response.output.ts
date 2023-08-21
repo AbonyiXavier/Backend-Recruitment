@@ -11,6 +11,12 @@ export class ICustomer {
 
   @Field(() => Role)
   role?: Role;
+
+  @Field(() => Number)
+  code?: number;
+
+  @Field(() => Boolean)
+  emailConfirm?: boolean;
 }
 
 @ObjectType()

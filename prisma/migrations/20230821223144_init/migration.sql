@@ -8,6 +8,8 @@ CREATE TABLE "Customer" (
     "password" TEXT NOT NULL,
     "refreshToken" TEXT,
     "role" "Role" DEFAULT 'USER',
+    "code" INTEGER,
+    "emailConfirm" BOOLEAN DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),

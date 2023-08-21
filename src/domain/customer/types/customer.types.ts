@@ -1,8 +1,10 @@
 import { Role } from '@prisma/client';
 
-export type Customer = {
+export type CustomerConfig = {
   id: string;
   email: string;
   password: string;
   role?: Role;
+  code?: number;
+  emailConfirm: boolean;
 };

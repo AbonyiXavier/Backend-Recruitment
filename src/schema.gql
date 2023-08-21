@@ -12,6 +12,8 @@ type Customer {
   updatedAt: Timestamp!
   email: String!
   role: Role!
+  code: Float!
+  emailConfirm: Boolean!
 }
 
 """
@@ -29,6 +31,8 @@ type ICustomer {
   id: ID!
   email: String!
   role: Role!
+  code: Float!
+  emailConfirm: Boolean!
 }
 
 type AuthResponseOutput {
@@ -72,6 +76,9 @@ type Mutation {
   """Sign in a customer"""
   signIn(input: SignInInput!): AuthResponseOutput!
 
+  """confirm activation cod"""
+  confirmActivationCode(input: ActivateCodeInput!): ICustomer!
+
   """Log out a customer"""
   logOut(id: String!): LogoutResponseOutput!
 
@@ -83,9 +90,15 @@ input SignUpInput {
   email: String!
   password: String!
   role: String
+  emailConfirm: Boolean = false
 }
 
 input SignInInput {
   email: String!
   password: String!
+}
+
+input ActivateCodeInput {
+  email: String!
+  code: Float!
 }
