@@ -7,7 +7,7 @@ CREATE TABLE "Customer" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "refreshToken" TEXT,
-    "role" "Role" NOT NULL DEFAULT 'USER',
+    "role" "Role" DEFAULT 'USER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),

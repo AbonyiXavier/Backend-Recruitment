@@ -11,12 +11,40 @@ type Customer {
   """Date and time when the object was updated last time."""
   updatedAt: Timestamp!
   email: String!
+  role: Role!
 }
 
 """
 `Date` type as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
 """
 scalar Timestamp
+
+"""Customer Role"""
+enum Role {
+  USER
+  ADMIN
+}
+
+type ICustomer {
+  id: ID!
+  email: String!
+  role: Role!
+}
+
+type AuthResponseOutput {
+  accessToken: String!
+  refreshToken: String!
+  customer: ICustomer!
+}
+
+type LogoutResponseOutput {
+  loggedOut: Boolean!
+}
+
+type NewTokenResponseOutput {
+  accessToken: String!
+  refreshToken: String!
+}
 
 type Query {
   updateCustomers: [Customer!]!
@@ -35,4 +63,29 @@ input WhereCustomerInput {
   email: String
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+type Mutation {
+  """SignUp a customer"""
+  signUp(input: SignUpInput!): AuthResponseOutput!
+
+  """Sign in a customer"""
+  signIn(input: SignInInput!): AuthResponseOutput!
+
+  """Log out a customer"""
+  logOut(id: String!): LogoutResponseOutput!
+
+  """Get new tokens for a customer when accessToken expires"""
+  getNewTokens: NewTokenResponseOutput!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  role: String
+}
+
+input SignInInput {
+  email: String!
+  password: String!
 }
