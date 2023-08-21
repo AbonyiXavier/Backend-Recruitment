@@ -1,0 +1,38 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Customer {
+  id: ID!
+
+  """Date and time when object was created."""
+  createdAt: Timestamp!
+
+  """Date and time when the object was updated last time."""
+  updatedAt: Timestamp!
+  email: String!
+}
+
+"""
+`Date` type as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
+type Query {
+  updateCustomers: [Customer!]!
+  customers(data: GetCustomerInput!): [Customer!]!
+}
+
+input GetCustomerInput {
+  cursor: String
+  skip: Int
+  take: Int
+  where: WhereCustomerInput
+}
+
+input WhereCustomerInput {
+  id: String
+  email: String
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
