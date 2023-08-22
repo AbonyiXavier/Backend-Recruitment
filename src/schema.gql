@@ -10,6 +10,9 @@ type Customer {
 
   """Date and time when the object was updated last time."""
   updatedAt: Timestamp!
+
+  """Date and time when the object was deleted"""
+  deletedAt: Timestamp!
   email: String!
   role: Role!
   code: Float!
@@ -25,6 +28,23 @@ scalar Timestamp
 enum Role {
   USER
   ADMIN
+}
+
+type CustomersResponseOutput {
+  """Total Count of results"""
+  totalCount: Float!
+
+  """Total Pages of results"""
+  totalPages: Float!
+
+  """Current page number starting 0"""
+  currentPage: Float!
+
+  """boolean flag to indicate if more pages exists"""
+  nextPage: Boolean!
+
+  """Array of customers output"""
+  customers: [Customer!]!
 }
 
 type ICustomer {
@@ -51,22 +71,26 @@ type NewTokenResponseOutput {
 }
 
 type Query {
-  updateCustomers: [Customer!]!
-  customers(data: GetCustomerInput!): [Customer!]!
+  """Fetch list of customers"""
+  customers(
+    """Pagination input"""
+    paginationArgs: PaginationArgs!
+
+    """search input"""
+    searchBy: CustomerSearchByInput
+  ): CustomersResponseOutput!
+
+  """Fetch a customer"""
+  customer: Customer!
 }
 
-input GetCustomerInput {
-  cursor: String
-  skip: Int
-  take: Int
-  where: WhereCustomerInput
+input PaginationArgs {
+  limit: Int! = 20
+  offset: Int! = 0
 }
 
-input WhereCustomerInput {
-  id: String
-  email: String
-  createdAt: Timestamp
-  updatedAt: Timestamp
+input CustomerSearchByInput {
+  searchTerm: String
 }
 
 type Mutation {
@@ -84,6 +108,18 @@ type Mutation {
 
   """Get new tokens for a customer when accessToken expires"""
   getNewTokens: NewTokenResponseOutput!
+
+  """Change customer password"""
+  changePassword(input: CustomerChangePasswordInput!): Customer!
+
+  """Resend activation code"""
+  resendActivationCode(email: String!): Customer!
+
+  """Update a customer"""
+  updateCustomer(id: String!, input: UpdateCustomerInput!): Customer!
+
+  """Delete a customer"""
+  deleteCustomer(id: String!): Customer!
 }
 
 input SignUpInput {
@@ -101,4 +137,14 @@ input SignInInput {
 input ActivateCodeInput {
   email: String!
   code: Float!
+}
+
+input CustomerChangePasswordInput {
+  oldPassword: String!
+  newPassword: String!
+}
+
+input UpdateCustomerInput {
+  email: String
+  role: Role
 }

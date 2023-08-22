@@ -14,6 +14,8 @@ import { AuthService } from '../../../../services/auth.service';
 import { CurrentCustomer } from '../../../../../../common/decorators/currentCustomer.decorator';
 import { CurrentCustomerId } from '../../../../../../common/decorators/currentCustomerId.decorator';
 import { ActivateCodeInput } from '../../../../dto/input/activatieCode.input';
+import { Customer } from '../../../../../customer/entities/customer.entity';
+import { CustomerChangePasswordInput } from '../../../../../customer/dto/input/change-password.input';
 
 @Resolver(() => AuthResponseOutput)
 export class AuthMutationResolver {
@@ -92,5 +94,42 @@ export class AuthMutationResolver {
     }
 
     return response;
+  }
+
+  @Mutation(() => Customer, {
+    name: 'changePassword',
+    description: 'Change customer password',
+  })
+  async changePassword(
+    @CurrentCustomerId() customerId: string,
+    @Args('input') input: CustomerChangePasswordInput,
+  ) {
+    const [customer, error] = await this.authService.changePassword(
+      customerId,
+      input,
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return customer;
+  }
+
+  @Public()
+  @Mutation(() => Customer, {
+    name: 'resendActivationCode',
+    description: 'Resend activation code',
+  })
+  async resendActivationCode(@Args('email') email: string) {
+    const [customer, error] = await this.authService.resendActivationCode(
+      email,
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return customer;
   }
 }

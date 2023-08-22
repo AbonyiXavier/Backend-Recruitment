@@ -12,4 +12,9 @@ export abstract class Base {
     description: 'Date and time when the object was updated last time.',
   })
   updatedAt: Date;
+
+  @Field({
+    description: 'Date and time when the object was deleted',
+  })
+  deletedAt?: Date;
 }

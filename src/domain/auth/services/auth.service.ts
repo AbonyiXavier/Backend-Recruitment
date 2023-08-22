@@ -12,10 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon from 'argon2';
-import {
-  AuthResponseOutput,
-  ICustomer,
-} from '../dto/output/auth.response.output';
+import { AuthResponseOutput } from '../dto/output/auth.response.output';
 import { SignUpInput } from '../dto/input/signup.input';
 import { SignInInput } from '../dto/input/signin.input';
 import { LogoutResponseOutput } from '../dto/output/logout.response.output';
@@ -28,6 +25,7 @@ import { EmailService } from '../../../providers/email/email.service';
 import { ActivateCodeInput } from '../dto/input/activatieCode.input';
 import { CustomerService } from '../../customer/services/customer.service';
 import { Customer } from '../../customer/entities/customer.entity';
+import { CustomerChangePasswordInput } from '../../customer/dto/input/change-password.input';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -139,7 +137,7 @@ export class AuthService implements IAuthService {
 
       await this.updateActivationCode(customer?.email);
 
-      const [response] = await this.customerService.customerMe(customer?.id);
+      const [response] = await this.customerService.customerById(customer?.id);
 
       return [response, null];
     } catch (error) {
@@ -205,7 +203,7 @@ export class AuthService implements IAuthService {
           email,
         },
         data: {
-          code: undefined,
+          code: null,
           emailConfirm: true,
         },
       });
@@ -325,5 +323,92 @@ export class AuthService implements IAuthService {
 
     await checkDuplicateCode();
     return activationCode;
+  }
+
+  async changePassword(
+    customerId: string,
+    customerChangePasswordInput: CustomerChangePasswordInput,
+  ): Promise<[Customer, HttpException]> {
+    try {
+      const { oldPassword, newPassword } = customerChangePasswordInput;
+
+      const customer =
+        await this.customerService.getCustomerByIdAndValidateOwnership(
+          customerId,
+        );
+
+      // To avoid using oldPassword when changing
+      if (oldPassword === newPassword) {
+        throw new BadRequestException(
+          `Please you can't use your old password, please change`,
+        );
+      }
+
+      const isPasswordMatch = await argon.verify(
+        customer?.password,
+        oldPassword,
+      );
+
+      if (!isPasswordMatch) {
+        throw new UnauthorizedException('Invalid credentials provided');
+      }
+
+      const hashedPassword = await argon.hash(newPassword);
+
+      await this.prisma.customer.update({
+        where: {
+          id: customerId,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      const [response] = await this.customerService.customerById(customerId);
+
+      return [response, null];
+    } catch (error) {
+      this.logger.error({ stack: error?.stack, message: error?.message });
+      return [null, error];
+    }
+  }
+
+  async resendActivationCode(
+    email: string,
+  ): Promise<[Customer, HttpException]> {
+    try {
+      const customer = await this.prisma.customer.findFirst({
+        where: {
+          email,
+        },
+      });
+
+      if (!customer) {
+        throw new UnauthorizedException(`Account doesn't exist`);
+      }
+
+      const activationCode = await this.generateCustomerActivationCode();
+
+      await this.prisma.customer.update({
+        where: {
+          email,
+        },
+        data: {
+          code: activationCode,
+        },
+      });
+
+      if (customer) {
+        await this.emailService.sendEmailActivationCode(
+          customer?.email,
+          activationCode,
+        );
+      }
+
+      return [customer, null];
+    } catch (error) {
+      this.logger.error({ stack: error?.stack, message: error?.message });
+      return [null, error];
+    }
   }
 }

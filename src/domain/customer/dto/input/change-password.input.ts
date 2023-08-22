@@ -30,3 +30,12 @@ export class GetCustomerInput {
   @Field(() => WhereCustomerInput, { nullable: true })
   where: WhereCustomerInput;
 }
+
+@InputType()
+export class CustomerChangePasswordInput {
+  @Field()
+  oldPassword: string;
+
+  @Field()
+  newPassword: string;
+}
